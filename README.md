@@ -12,7 +12,8 @@ You can run this project by following the [local setup instructions](#getting-st
 -   **REST API Endpoint**: A `POST /price-car` endpoint that accepts car listing details.
 -   **Pricing Tool Integration**: Connects to a simulated Python tool (`get_car_price`) to retrieve a price estimate.
 -   **Robust Error Handling**: Gracefully handles potential errors, such as LLM extraction failures or unknown vehicle models, returning clear error messages with appropriate HTTP status codes.
--   **Production-Ready Logging**: Logs detailed exceptions on the server for debugging while presenting generic, user-friendly error messages via the API to maintain security and a good user experience.
+-   **Production-Ready Logging**: Logs detailed exceptions on the server for debugging while presenting generic, user-friendly error messages via the API to maintain security.
+-   **Comprehensive Testing**: Includes a test suite using `pytest` that verifies success cases and edge-case failures. It leverages FastAPI's **Dependency Injection** system to mock the external LLM service, ensuring tests are fast, reliable, and isolated.
 -   **Secure & Asynchronous**: Follows best practices by using environment variables for API keys and leveraging asynchronous processing for high performance.
 
 ---
@@ -24,6 +25,7 @@ You can run this project by following the [local setup instructions](#getting-st
 -   **LLM Provider**: OpenAI
 -   **Production Server**: Gunicorn
 -   **Development Server**: Uvicorn
+-   **Testing**: Pytest, unittest.mock
 -   **Language**: Python 3.9+
 
 ---
@@ -101,65 +103,31 @@ uvicorn main:app --reload
 
 ---
 
-## How to Use the API
+## Running Tests
 
-You can test the API using the interactive documentation or a tool like `cURL`.
+This project includes a test suite to ensure reliability. The tests mock the external OpenAI API call to ensure they are fast and do not require an active internet connection or API key.
 
-### Option A: Using the Interactive Docs (Recommended)
-
-1.  With the server running, open your web browser and navigate to:
-    [**http://127.0.0.1:8000/docs**](http://127.0.0.1:8000/docs)
-
-2.  Expand the `POST /price-car` endpoint section.
-
-3.  Click the **"Try it out"** button.
-
-4.  Paste the following JSON into the **Request body** field:
-    ```json
-    {
-      "title": "For Sale: 2007 Honda Accord - runs great!",
-      "description": "Selling my reliable Honda Accord sedan. It's a 2007 model with a clean interior, working AC, and 120k miles. No accidents."
-    }
-    ```
-
-5.  Click the **"Execute"** button to send the request.
-
-### Option B: Using cURL
-
-You can also send a request from your terminal:
+To run the tests, execute the following command from the project root:
 
 ```sh
-curl -X 'POST' \\
-  'http://127.0.0.1:8000/price-car' \\
-  -H 'accept: application/json' \\
-  -H 'Content-Type: application/json' \\
-  -d '{
-  "title": "2007 Honda Accord - great condition, runs smooth!",
-  "description": "Selling my reliable Honda Accord. 2007 model, clean interior, AC works, 120k miles. No accidents."
-}'
+pytest --verbose
 ```
 
-### Example Successful Response
-
-You should receive a `200 OK` response with a JSON body similar to this:
-
-```json
-{
-  "make": "Honda",
-  "model": "Accord",
-  "price": 4750
-}
-```
 ---
 
 ## Deployment
 
 This API is deployed and live on **Render**.
 
-**Live API Endpoint:** `https://price-my-car-api.onrender.com/price-car`
-**Live Interactive Docs:** `https://price-my-car-api.onrender.com/docs`
+This project is hosted on Render's free tier, which automatically spins down the service after a period of inactivity. As a result, the first request may take 30-60 seconds to process as the server wakes up.
 
-The deployment was configured with the following settings on Render's free tier:
+If you see an error message or the page doesn't load immediately, please wait a moment and then refresh your browser. The application will be available once the cold start is complete.
+
+**Live API Endpoint:** https://price-my-car-api.onrender.com/price-car
+
+**Live Interactive Docs:** https://price-my-car-api.onrender.com/docs
+
+The deployment was configured with the following settings:
 
 -   **Build Command**: `pip install -r requirements.txt`
 -   **Start Command**:
@@ -172,8 +140,8 @@ The deployment was configured with the following settings on Render's free tier:
 
 ## Design Choices
 
--   **FastAPI**: Chosen for its high performance, native asynchronous support (critical for waiting on LLM API calls without blocking), and automatic data validation and API documentation.
--   **LangChain with `JsonOutputParser`**: Instead of simple string parsing, LangChain's `JsonOutputParser` was used to force the LLM to return a structured, validated JSON object. This drastically increases the reliability of the extraction process.
--   **Asynchronous API Endpoint**: The `/price-car` endpoint is defined with `async def`, allowing it to call the LLM (`await chain.ainvoke(...)`) without blocking the server, enabling it to handle other requests concurrently.
--   **Secure Error Handling & Logging**: The application distinguishes between client errors (4xx) and server errors (5xx). For server-side errors, detailed exceptions are logged for developer debugging, but only a generic "Internal Server Error" message is sent to the user. This prevents leaking potentially sensitive information about the application's internal workings, which is a critical security and user experience best practice.
+-   **FastAPI with Dependency Injection**: The application uses FastAPI's native **Dependency Injection** system (`Depends`) to provide the LLM chain to the API endpoint. This decouples the endpoint from the global state, making the code more modular. Crucially, it allows for robust and reliable testing by using `app.dependency_overrides` to inject a mock object during tests, a far superior approach to patching global variables.
+-   **LangChain with `JsonOutputParser`**: To ensure the LLM returns predictable, structured data, LangChain's `JsonOutputParser` was used. This forces the model's output into a validated JSON object, drastically increasing the reliability of the extraction process.
+-   **Asynchronous Endpoint**: The `/price-car` endpoint is defined with `async def`, allowing it to call the LLM (`await chain.ainvoke(...)`) without blocking the server. This is critical for performance, enabling the server to handle other requests concurrently while waiting for the network response from OpenAI.
+-   **Secure Error Handling & Logging**: The application distinguishes between client errors (4xx) and server errors (5xx). For server-side errors, detailed exceptions are logged for developer debugging, but only a generic "Internal Server Error" message is sent to the user. This prevents leaking potentially sensitive information about the application's internal workings.
 -   **Secure API Keys**: The OpenAI API key is loaded securely from an environment variable and is never hard-coded into the application.
