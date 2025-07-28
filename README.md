@@ -12,7 +12,7 @@ You can run this project by following the [local setup instructions](#getting-st
 -   **REST API Endpoint**: A `POST /price-car` endpoint that accepts car listing details.
 -   **Pricing Tool Integration**: Connects to a simulated Python tool (`get_car_price`) to retrieve a price estimate.
 -   **Robust Error Handling**: Gracefully handles potential errors, such as LLM extraction failures or unknown vehicle models, returning clear error messages with appropriate HTTP status codes.
--   **Interactive API Docs**: Provides automatically generated, interactive API documentation (via Swagger UI) to easily test the endpoint.
+-   **Production-Ready Logging**: Logs detailed exceptions on the server for debugging while presenting generic, user-friendly error messages via the API to maintain security and a good user experience.
 -   **Secure & Asynchronous**: Follows best practices by using environment variables for API keys and leveraging asynchronous processing for high performance.
 
 ---
@@ -91,7 +91,7 @@ For local development, start the API server with Uvicorn.
 uvicorn main:app
 ```
 
-The server will start and listen on `http://127.0.0.1:8000`.
+The server will start and listen on `http://127.0.0.1:8000`. Detailed error logs will be printed to the console.
 
 Add `--reload` flag that enables hot-reloading, which automatically restarts the server when you make changes to the code.
 
@@ -175,4 +175,5 @@ The deployment was configured with the following settings on Render's free tier:
 -   **FastAPI**: Chosen for its high performance, native asynchronous support (critical for waiting on LLM API calls without blocking), and automatic data validation and API documentation.
 -   **LangChain with `JsonOutputParser`**: Instead of simple string parsing, LangChain's `JsonOutputParser` was used to force the LLM to return a structured, validated JSON object. This drastically increases the reliability of the extraction process.
 -   **Asynchronous API Endpoint**: The `/price-car` endpoint is defined with `async def`, allowing it to call the LLM (`await chain.ainvoke(...)`) without blocking the server, enabling it to handle other requests concurrently.
--   **Security**: The OpenAI API key is loaded securely from an environment variable and is never hard-coded into the application, following industry best practices.
+-   **Secure Error Handling & Logging**: The application distinguishes between client errors (4xx) and server errors (5xx). For server-side errors, detailed exceptions are logged for developer debugging, but only a generic "Internal Server Error" message is sent to the user. This prevents leaking potentially sensitive information about the application's internal workings, which is a critical security and user experience best practice.
+-   **Secure API Keys**: The OpenAI API key is loaded securely from an environment variable and is never hard-coded into the application.
