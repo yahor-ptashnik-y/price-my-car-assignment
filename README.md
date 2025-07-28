@@ -117,6 +117,56 @@ Add `--reload` flag that enables hot-reloading, which automatically restarts the
 uvicorn main:app --reload
 ```
 
+## How to Use the API
+
+You can test the API using the interactive documentation or a tool like `cURL`.
+
+### Option A: Using the Interactive Docs (Recommended)
+
+1.  With the server running, open your web browser and navigate to:
+    [**http://127.0.0.1:8000/docs**](http://127.0.0.1:8000/docs)
+
+2.  Expand the `POST /price-car` endpoint section.
+
+3.  Click the **"Try it out"** button.
+
+4.  Paste the following JSON into the **Request body** field:
+    ```json
+    {
+      "title": "For Sale: 2007 Honda Accord - runs great!",
+      "description": "Selling my reliable Honda Accord sedan. It's a 2007 model with a clean interior, working AC, and 120k miles. No accidents."
+    }
+    ```
+
+5.  Click the **"Execute"** button to send the request.
+
+### Option B: Using cURL
+
+You can also send a request from your terminal:
+
+```sh
+curl -X 'POST' \\
+  'http://127.0.0.1:8000/price-car' \\
+  -H 'accept: application/json' \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+  "title": "2007 Honda Accord - great condition, runs smooth!",
+  "description": "Selling my reliable Honda Accord. 2007 model, clean interior, AC works, 120k miles. No accidents."
+}'
+```
+
+### Example Successful Response
+
+You should receive a `200 OK` response with a JSON body similar to this:
+
+```json
+{
+  "make": "Honda",
+  "model": "Accord",
+  "price": 4750
+}
+```
+
 ---
 
 ## Code Quality and Formatting
