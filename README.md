@@ -2,6 +2,8 @@
 
 This project is an implementation of the "Price My Car" API assignment. It is a REST API built with FastAPI that takes a car's title and description, uses a Large Language Model (LLM) via LangChain to extract its make and model, and returns an estimated price.
 
+You can run this project by following the [local setup instructions](#getting-started-local-setup) or test the [live deployed version](#deployment) directly.
+
 ---
 
 ## Features
@@ -17,18 +19,18 @@ This project is an implementation of the "Price My Car" API assignment. It is a 
 
 ## Tech Stack
 
--   **Web Framework**: FastAPI
+-   **Framework**: FastAPI
 -   **LLM Framework**: LangChain
 -   **LLM Provider**: OpenAI
--   **Web Server**: Uvicorn
+-   **Production Server**: Gunicorn
+-   **Development Server**: Uvicorn
 -   **Language**: Python 3.9+
--   **Dependencies**: Pydantic (for data validation), python-dotenv (for environment variables)
 
 ---
 
-## Getting Started
+## Getting Started (Local Setup)
 
-Follow these instructions to set up and run the project locally.
+Follow these instructions to set up and run the project on your local machine.
 
 ### 1. Prerequisites
 
@@ -41,7 +43,7 @@ Follow these instructions to set up and run the project locally.
 
 ```sh
 git clone git@github.com:yahor-ptashnik-y/price-my-car-assignment.git
-cd price-my-car-api
+cd price-my-car-assignment
 ```
 
 **Step 2: Create and activate a virtual environment**
@@ -73,7 +75,7 @@ The application requires an OpenAI API key to function.
 
 **Step 4: Install dependencies**
 
-Install all the required Python packages using the `requirements.txt` file.
+Install all the required Python packages, including `gunicorn` for production.
 
 ```sh
 pip install -r requirements.txt
@@ -81,15 +83,21 @@ pip install -r requirements.txt
 
 ---
 
-## Running the Application
+## Running the Application Locally
 
-Once the setup is complete, you can start the API server with Uvicorn.
+For local development, start the API server with Uvicorn.
+
+```sh
+uvicorn main:app
+```
+
+The server will start and listen on `http://127.0.0.1:8000`.
+
+Add `--reload` flag that enables hot-reloading, which automatically restarts the server when you make changes to the code.
 
 ```sh
 uvicorn main:app --reload
 ```
-
-The server will start and listen on `http://127.0.0.1:8000`.
 
 ---
 
@@ -142,6 +150,24 @@ You should receive a `200 OK` response with a JSON body similar to this:
   "price": 4750
 }
 ```
+---
+
+## Deployment
+
+This API is deployed and live on **Render**.
+
+**Live API Endpoint:** `https://price-my-car-api.onrender.com/price-car`
+**Live Interactive Docs:** `https://price-my-car-api.onrender.com/docs`
+
+The deployment was configured with the following settings on Render's free tier:
+
+-   **Build Command**: `pip install -r requirements.txt`
+-   **Start Command**:
+    ```sh
+    gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
+    ```
+-   **Environment Variables**: The `OPENAI_API_KEY` was set securely in the Render environment settings.
+
 ---
 
 ## Design Choices
