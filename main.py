@@ -20,21 +20,28 @@ if os.getenv("OPENAI_API_KEY") is None:
 app = FastAPI(
     title="Price My Car API",
     description="An API to estimate the price of a car using LangChain, OpenAI, and a pricing tool.",
-    version="1.0.0"
+    version="1.0.0",
 )
+
 
 class CarListing(BaseModel):
     title: str
     description: str
+
 
 class PricedCar(BaseModel):
     make: str
     model: str
     price: int
 
+
 class ExtractedCarInfo(BaseModel):
-    make: str = Field(description="The manufacturer or make of the car, e.g., 'Honda'")
-    model: str = Field(description="The specific model of the car, e.g., 'Accord'")
+    make: str = Field(
+        description="The manufacturer or make of the car, e.g., 'Honda'"
+    )
+    model: str = Field(
+        description="The specific model of the car, e.g., 'Accord'"
+    )
 
 
 def get_car_price(make: str, model: str) -> int:
@@ -43,9 +50,9 @@ def get_car_price(make: str, model: str) -> int:
     Raises ValueError if the combination is invalid or unknown.
     """
     known_prices = {
-        "honda": { "accord": 4750, "civic": 3500 },
-        "toyota": { "camry": 5200, "corolla": 3800 },
-        "ford": { "focus": 3200, "mustang": 8500 },
+        "honda": {"accord": 4750, "civic": 3500},
+        "toyota": {"camry": 5200, "corolla": 3800},
+        "ford": {"focus": 3200, "mustang": 8500},
     }
     make_lower = make.lower()
     model_lower = model.lower()
@@ -54,7 +61,9 @@ def get_car_price(make: str, model: str) -> int:
         base_price = known_prices[make_lower][model_lower]
         return base_price + random.randint(-250, 250)
     else:
-        raise ValueError(f"Pricing for make '{make}' and model '{model}' is not available.")
+        raise ValueError(
+            f"Pricing for make '{make}' and model '{model}' is not available."
+        )
 
 
 def get_extraction_chain():
@@ -65,18 +74,24 @@ def get_extraction_chain():
 
     parser = JsonOutputParser(pydantic_object=ExtractedCarInfo)
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert at extracting vehicle information from text. "
-                   "You must respond with a JSON object that strictly follows this format: {format_instructions}. "
-                   "IMPORTANT: If a make or model cannot be found in the text, you MUST return null for that value."),
-        ("human", "Extract the make and model from the following car listing:\n"
-                  "Title: {title}\nDescription: {description}")
-    ]).partial(format_instructions=parser.get_format_instructions())
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are an expert at extracting vehicle information from text. "
+                "You must respond with a JSON object that strictly follows this format: {format_instructions}. "
+                "IMPORTANT: If a make or model cannot be found in the text, you MUST return null for that value.",
+            ),
+            (
+                "human",
+                "Extract the make and model from the following car listing:\n"
+                "Title: {title}\nDescription: {description}",
+            ),
+        ]
+    ).partial(format_instructions=parser.get_format_instructions())
 
-    chain = (
-        prompt | model | parser
-    ).with_config(run_name="CarInfoExtraction")
-    
+    chain = (prompt | model | parser).with_config(run_name="CarInfoExtraction")
+
     return chain
 
 
@@ -90,21 +105,20 @@ async def price_car_endpoint(
     gets a price, and returns the result.
     """
     try:
-        extracted_info = await chain.ainvoke({
-            "title": listing.title,
-            "description": listing.description
-        })
+        extracted_info = await chain.ainvoke(
+            {"title": listing.title, "description": listing.description}
+        )
     except OutputParserException as e:
         logging.error(f"OutputParserException occurred: {e}")
         raise HTTPException(
             status_code=500,
-            detail="The server had trouble understanding the response from the AI model. Please try again."
+            detail="The server had trouble understanding the response from the AI model. Please try again.",
         )
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")
         raise HTTPException(
             status_code=500,
-            detail="An internal server error occurred. Please try again later."
+            detail="An internal server error occurred. Please try again later.",
         )
 
     make = extracted_info.get("make")
@@ -113,7 +127,7 @@ async def price_car_endpoint(
     if not make or not model:
         raise HTTPException(
             status_code=422,
-            detail="Could not extract a valid make and model from the provided text. Please provide a more descriptive listing."
+            detail="Could not extract a valid make and model from the provided text. Please provide a more descriptive listing.",
         )
 
     try:

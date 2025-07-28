@@ -32,9 +32,12 @@ def test_price_car_success(mocked_llm_chain: AsyncMock):
     """
     request_data = {
         "title": "Selling a 2007 Honda Accord",
-        "description": "It's a reliable car."
+        "description": "It's a reliable car.",
     }
-    mocked_llm_chain.ainvoke.return_value = {"make": "Honda", "model": "Accord"}
+    mocked_llm_chain.ainvoke.return_value = {
+        "make": "Honda",
+        "model": "Accord",
+    }
 
     response = client.post("/price-car", json=request_data)
 
@@ -48,23 +51,37 @@ def test_price_car_llm_fails_to_extract(mocked_llm_chain: AsyncMock):
     """
     Tests the case where the LLM can't extract data.
     """
-    request_data = {"title": "Looking for a friend", "description": "Must be nice"}
+    request_data = {
+        "title": "Looking for a friend",
+        "description": "Must be nice",
+    }
     mocked_llm_chain.ainvoke.return_value = {"make": None, "model": None}
 
     response = client.post("/price-car", json=request_data)
 
     assert response.status_code == 422
-    assert "Could not extract a valid make and model" in response.json()["detail"]
+    assert (
+        "Could not extract a valid make and model" in response.json()["detail"]
+    )
 
 
 def test_price_car_pricing_not_found(mocked_llm_chain: AsyncMock):
     """
     Tests the case where the pricing tool doesn't know the car.
     """
-    request_data = {"title": "Selling a Tesla", "description": "It's electric!"}
-    mocked_llm_chain.ainvoke.return_value = {"make": "Tesla", "model": "Model S"}
+    request_data = {
+        "title": "Selling a Tesla",
+        "description": "It's electric!",
+    }
+    mocked_llm_chain.ainvoke.return_value = {
+        "make": "Tesla",
+        "model": "Model S",
+    }
 
     response = client.post("/price-car", json=request_data)
 
     assert response.status_code == 404
-    assert "Pricing for make 'Tesla' and model 'Model S' is not available" in response.json()["detail"]
+    assert (
+        "Pricing for make 'Tesla' and model 'Model S' is not available"
+        in response.json()["detail"]
+    )
