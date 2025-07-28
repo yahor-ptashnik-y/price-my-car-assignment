@@ -13,8 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 if os.getenv("OPENAI_API_KEY") is None:
-    print("Error: OPENAI_API_KEY environment variable not set.")
-    exit()
+    raise SystemExit("Error: OPENAI_API_KEY environment variable not set.")
 
 app = FastAPI(
     title="Price My Car API",
