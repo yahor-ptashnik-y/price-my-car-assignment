@@ -1,14 +1,16 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 import random
 import os
 import logging
+
+from fastapi import FastAPI, HTTPException, Depends
+from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
-from dotenv import load_dotenv
+from langchain_core.runnables import Runnable
 
 load_dotenv()
 
@@ -55,7 +57,7 @@ def get_car_price(make: str, model: str) -> int:
         raise ValueError(f"Pricing for make '{make}' and model '{model}' is not available.")
 
 
-def create_extraction_chain():
+def get_extraction_chain():
     """
     Creates and returns a LangChain chain for extracting car make and model.
     """
@@ -76,17 +78,18 @@ def create_extraction_chain():
     
     return chain
 
-extraction_chain = create_extraction_chain()
-
 
 @app.post("/price-car", response_model=PricedCar)
-async def price_car_endpoint(listing: CarListing):
+async def price_car_endpoint(
+    listing: CarListing,
+    chain: Runnable = Depends(get_extraction_chain),
+):
     """
     Accepts car listing data, extracts make and model using an LLM,
     gets a price, and returns the result.
     """
     try:
-        extracted_info = await extraction_chain.ainvoke({
+        extracted_info = await chain.ainvoke({
             "title": listing.title,
             "description": listing.description
         })
