@@ -14,6 +14,7 @@ You can run this project by following the [local setup instructions](#getting-st
 -   **Robust Error Handling**: Gracefully handles potential errors, such as LLM extraction failures or unknown vehicle models, returning clear error messages with appropriate HTTP status codes.
 -   **Production-Ready Logging**: Logs detailed exceptions on the server for debugging while presenting generic, user-friendly error messages via the API to maintain security.
 -   **Comprehensive Testing**: Includes a test suite using `pytest` that verifies success cases and edge-case failures. It leverages FastAPI's **Dependency Injection** system to mock the external LLM service, ensuring tests are fast, reliable, and isolated.
+-   **Automated Code Formatting**: Uses **Black** and **`pre-commit`** to automatically enforce a consistent, PEP 8-compliant code style, guaranteeing code quality and readability.
 -   **Secure & Asynchronous**: Follows best practices by using environment variables for API keys and leveraging asynchronous processing for high performance.
 
 ---
@@ -26,6 +27,7 @@ You can run this project by following the [local setup instructions](#getting-st
 -   **Production Server**: Gunicorn
 -   **Development Server**: Uvicorn
 -   **Testing**: Pytest, unittest.mock
+-   **Code Formatting**: Black, pre-commit
 -   **Language**: Python 3.9+
 
 ---
@@ -83,6 +85,20 @@ Install all the required Python packages, including `gunicorn` for production.
 pip install -r requirements.txt
 ```
 
+**Step 5: Set up the pre-commit hook**
+
+This project uses `pre-commit` to automatically format code before each commit. Before that, you have to install packages used only for develepoment purposes.
+
+```sh
+pip install -r requirements-dev.txt
+```
+
+This is a one-time setup command.
+
+```sh
+pre-commit install
+```
+
 ---
 
 ## Running the Application Locally
@@ -103,6 +119,14 @@ uvicorn main:app --reload
 
 ---
 
+## Code Quality and Formatting
+
+This project uses the **Black** code formatter to ensure a consistent, PEP 8-compliant style. The line length is configured to a maximum of 79 characters via the `pyproject.toml` file.
+
+To maintain code quality automatically, a **`pre-commit` hook** is configured. This hook runs Black on all staged files before a commit is created. If formatting changes are made, the commit will be aborted, allowing you to review and re-stage the formatted files. This guarantees that every commit adheres to the project's style guide.
+
+---
+
 ## Running Tests
 
 This project includes a test suite to ensure reliability. The tests mock the external OpenAI API call to ensure they are fast and do not require an active internet connection or API key.
@@ -119,16 +143,16 @@ pytest --verbose
 
 This API is deployed and live on **Render**.
 
-This project is hosted on Render's free tier, which automatically spins down the service after a period of inactivity. As a result, the first request may take 30-60 seconds to process as the server wakes up.
-
-If you see an error message or the page doesn't load immediately, please wait a moment and then refresh your browser. The application will be available once the cold start is complete.
+> **Note on Free Tier Hosting**
+> This project is hosted on Render's free tier, which automatically spins down the service after a period of inactivity. As a result, the first request may take **30-60 seconds** to process as the server wakes up.
+>
+> If you see an error message or the page doesn't load immediately, please **wait a moment and then refresh your browser**. The application will be available once the cold start is complete.
 
 **Live API Endpoint:** https://price-my-car-api.onrender.com/price-car
 
 **Live Interactive Docs:** https://price-my-car-api.onrender.com/docs
 
 The deployment was configured with the following settings:
-
 -   **Build Command**: `pip install -r requirements.txt`
 -   **Start Command**:
     ```sh
@@ -140,7 +164,7 @@ The deployment was configured with the following settings:
 
 ## Design Choices
 
--   **FastAPI with Dependency Injection**: The application uses FastAPI's native **Dependency Injection** system (`Depends`) to provide the LLM chain to the API endpoint. This decouples the endpoint from the global state, making the code more modular. Crucially, it allows for robust and reliable testing by using `app.dependency_overrides` to inject a mock object during tests, a far superior approach to patching global variables.
+-   **FastAPI with Dependency Injection**: The application uses FastAPI's native **Dependency Injection** system (`Depends`) to provide the LLM chain to the API endpoint. This decouples the endpoint from the global state, making the code more modular. Crucially, it allows for robust and reliable testing by using `app.dependency_overrides` to inject a mock object during tests.
 -   **LangChain with `JsonOutputParser`**: To ensure the LLM returns predictable, structured data, LangChain's `JsonOutputParser` was used. This forces the model's output into a validated JSON object, drastically increasing the reliability of the extraction process.
 -   **Asynchronous Endpoint**: The `/price-car` endpoint is defined with `async def`, allowing it to call the LLM (`await chain.ainvoke(...)`) without blocking the server. This is critical for performance, enabling the server to handle other requests concurrently while waiting for the network response from OpenAI.
 -   **Secure Error Handling & Logging**: The application distinguishes between client errors (4xx) and server errors (5xx). For server-side errors, detailed exceptions are logged for developer debugging, but only a generic "Internal Server Error" message is sent to the user. This prevents leaking potentially sensitive information about the application's internal workings.
