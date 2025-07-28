@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import random
 import os
+import logging
 
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -91,14 +92,16 @@ async def price_car_endpoint(listing: CarListing):
             "description": listing.description
         })
     except OutputParserException as e:
+        logging.error(f"OutputParserException occurred: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to parse the output from the language model. Please try again. Error: {e}"
+            detail="The server had trouble understanding the response from the AI model. Please try again."
         )
     except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"An unexpected error occurred. Error: {e}"
+            detail="An internal server error occurred. Please try again later."
         )
 
     make = extracted_info.get("make")
