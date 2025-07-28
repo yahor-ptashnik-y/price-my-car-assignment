@@ -6,6 +6,7 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.exceptions import OutputParserException
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -89,20 +90,25 @@ async def price_car_endpoint(listing: CarListing):
             "title": listing.title,
             "description": listing.description
         })
+    except OutputParserException as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse the output from the language model. Please try again. Error: {e}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to process text with language model. Error: {e}"
-        )
-
-    if not extracted_info or "make" not in extracted_info or "model" not in extracted_info:
-        raise HTTPException(
-            status_code=422,
-            detail="Could not extract make and model from the provided text."
+            detail=f"An unexpected error occurred. Error: {e}"
         )
 
     make = extracted_info.get("make")
     model = extracted_info.get("model")
+
+    if not make or not model:
+        raise HTTPException(
+            status_code=422,
+            detail="Could not extract a valid make and model from the provided text. Please provide a more descriptive listing."
+        )
 
     try:
         price = get_car_price(make=make, model=model)
