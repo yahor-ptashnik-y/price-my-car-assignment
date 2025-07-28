@@ -67,7 +67,8 @@ def get_extraction_chain():
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are an expert at extracting vehicle information from text. "
-                   "You must respond with a JSON object that strictly follows this format: {format_instructions}"),
+                   "You must respond with a JSON object that strictly follows this format: {format_instructions}. "
+                   "IMPORTANT: If a make or model cannot be found in the text, you MUST return null for that value."),
         ("human", "Extract the make and model from the following car listing:\n"
                   "Title: {title}\nDescription: {description}")
     ]).partial(format_instructions=parser.get_format_instructions())
